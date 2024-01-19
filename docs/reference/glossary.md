@@ -5,6 +5,17 @@
 ### Retrieval-augmented Generation
 : Also known as RAG. 
 
+    Retrieval-Augmented Generation (RAG) combines information retrieval with large language models (LLMs) to 
+improve the factual accuracy and relevance of machine-generated text by accessing external databases. 
+This approach is particularly useful for generating responses to queries that require current knowledge or 
+specific details not contained within the model's pre-existing training data.
+
+    At the core of RAG is the idea that while powerful, large language models (like GPT-3) are limited by the knowledge they
+were trained on, this limitation can be overcome by integrating a retrieval component, fetching relevant context at query-time 
+and populating the LLM prompt with said context. This retrieval step allows the model to access up-to-date and detailed information beyond what
+it has learned during its initial training.
+
+
 ### Transformers
 :   Transformers, in the context of Large Language Models (LLMs), are a type of neural network architecture that is particularly good at handling sequences of data, like text. Unlike previous models that processed data in order, transformers can look at all parts of the sequence at once. This allows them to understand context better and make connections between different parts of the data more effectively.
 
