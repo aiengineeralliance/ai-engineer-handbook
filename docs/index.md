@@ -38,7 +38,7 @@ Swyx has more on this: [The Rise of the AI Engineer](https://www.latent.space/p/
 
 This handbook follows the [Diátaxis](https://diataxis.fr) documentation framework.
 
-If you are here to learn, go to **[tutorials](tutorials/llm-101)**. 
+If you are here to learn, go to **[tutorials](tutorials/rag.md)**. 
 
 **[HOWTOs](HOWTOs/)** on the other hand, are task-oriented and exist to help you problem-solve and accomplish a task. 
 

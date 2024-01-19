@@ -30,9 +30,9 @@ it has learned during its initial training.
 
 
 ## The application
-We want to build a Python application that lets us ask ChatGPT questions over our knowledgebase (containing 2 documents) and get back answers that are grounded in these 2 documents (and not from ChatGPT's entire knowledgebase).
+We want to build a Python application that lets us ask ChatGPT questions over our knowledge base (containing 2 documents) and get back answers that are grounded in these 2 documents (and not from ChatGPT's entire knowledge base).
 
-The knowledgebase is: 
+The knowledge base is: 
 
 1. Horses are domesticated mammals known for their strength, speed, and versatility. They have been crucial to human civilization for transportation, agriculture, and recreational activities. Horses belong to the Equidae family and are herbivores with a digestive system adapted to grazing. Common breeds include the Arabian, Thoroughbred, and Clydesdale.
 
@@ -40,7 +40,7 @@ The knowledgebase is:
 
 
 !!! note 
-    In reality, if the knowledgebase only comprised these 2 documents, we wouldn't bother to RAG as these are small enough to fit into the context. However, we're using this simple case to demonstrate how RAG works in general. 
+    In reality, if the knowledge base only comprised these 2 documents, we wouldn't bother to RAG as these are small enough to fit into the context. However, we're using this simple case to demonstrate how RAG works in general. 
 
 
 ## Install dependencies
@@ -149,16 +149,84 @@ if __name__ == "__main__":
 
 ## The entire file
 
-Here is the entire file.
+```python
+import chromadb
+import chromadb.utils.embedding_functions as embedding_functions
+from chromadb.api.models import Collection
+from openai import OpenAI
+
+OPENAI_API_KEY = "sk-xxx" # CHANGEME
+chroma_collection = "animals"
+embedding_function = embedding_functions.OpenAIEmbeddingFunction(api_key=OPENAI_API_KEY)
+chroma_client = chromadb.PersistentClient(path="vector_store")
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+
+
+def add_docs_to_vector_store(documents: list[str],
+                             metadatas: list[dict] = None, ids: list[str] = None,
+                             ):
+    collection: Collection = chroma_client.get_or_create_collection(name=chroma_collection,
+                                                                    embedding_function=embedding_function)
+    if ids is None:
+        ids = [str(counter) for counter, doc in enumerate(documents, 1)]
+    collection.add(
+        documents=documents,
+        metadatas=metadatas,
+        ids=ids
+    )
+
+
+def retrieval_prompt(docs, query) -> str:
+    return f"""Answer the QUESTION using only the CONTEXT given, nothing else. 
+Do not make up an answer, say 'I don't know' if you are not sure. Be succinct.
+QUESTION: {query}
+CONTEXT: {[doc for doc in docs]}
+ANSWER:
+"""
+
+
+def rag(query: str):
+    collection: Collection = chroma_client.get_or_create_collection(name=chroma_collection,
+                                                                    embedding_function=embedding_function)
+    docs = collection.query(query_texts=query, n_results=2)
+    prompt = retrieval_prompt(docs["documents"][0], query)
+    return llm_call(prompt, "You are a helpful AI assistant.", model="gpt-3.5-turbo", temperature=0.0)
+
+
+def llm_call(prompt, system_prompt="", **kwargs) -> str:
+    messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
+    kwargs["messages"] = messages
+    response = openai_client.chat.completions.create(**kwargs)
+    generated_texts = [
+        choice.message.content.strip() for choice in response.choices
+    ]
+    return " ".join(generated_texts)
+
+
+if __name__ == "__main__":
+    add_docs_to_vector_store([
+        "Horses are domesticated mammals known for their strength, speed, and versatility. They have been crucial to human civilization for transportation, agriculture, and recreational activities. Horses belong to the Equidae family and are herbivores with a digestive system adapted to grazing. Common breeds include the Arabian, Thoroughbred, and Clydesdale.",
+        "Zebras are African equids known for their distinctive black and white striped coat patterns. They belong to the genus Equus, which also includes horses and donkeys. Zebras are herbivores and primarily graze on grasses. "])
+    print(rag("What genus do horses belong to?"))
+    print(rag("What genus do zebras belong to?"))
+    print(rag("Are zebras and horses of the same genus?"))
+    print(rag("What genus do snakes belong to?"))
+```
 
 ## Where to from here?
 
 Congratulations! You've built your first RAG application. 
 
-Some suggestions from here:
+For the sake of brevity, conciseness and ease of comprehension, we've omitted all kinds of important stuff 
+that would make this code more production-ready, such as:
 
-1. Move the OPENAI_API_KEY into a .env file and use `python-dotenv` to load it.
-2. Implement chunking before vector store indexing to handle larger documents.
-3. Instead of using an incrementing counter, use a hashing/fingerprinting function (e.g. `farmhash`) to create content hashes.
-4. Experiment with using other embedding models other than OpenAI's embeddings.
+1. Storing the OPENAI_API_KEY into a .env file and using `python-dotenv` to load it.
+2. Implementing a backoff mechanism when calling OpenAI, e.g. using tenacity or backoff. 
+3. Implementing chunking before vector store indexing to handle larger documents.
+4. Implementing text extraction/parsing to handle PDF, Word, epub files etc.
+
+Additionally, some things that might be a good to experiment with include:
+
+1. Instead of using an incrementing counter, using a hashing/fingerprinting function (e.g. `farmhash`) to create content hashes.
+2. Experiment with using other embedding models other than OpenAI's embeddings.
 
