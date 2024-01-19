@@ -1,4 +1,5 @@
 site_name: The AI Engineer Handbook - a practical, hands-on guide
+repo_url: https://github.com/aiengineeralliance/ai-engineer-handbook
 theme:
   name: material
   features:
